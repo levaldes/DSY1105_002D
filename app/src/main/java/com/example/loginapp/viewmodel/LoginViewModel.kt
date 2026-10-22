@@ -49,7 +49,7 @@ class LoginViewModel(
         _uiState.update { it.copy(errores = LoginErrores(emailError = emailErr, passwordError = passErr)) }
         return isValid
     }
-
+// Validaciones
     fun login() {
         if (!validarFormulario()) return
 
