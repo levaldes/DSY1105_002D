@@ -2,15 +2,19 @@ package com.example.loginapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.loginapp.data.local.UserDao
+import com.example.loginapp.data.local.UserEntity
 import com.example.loginapp.model.*
 import com.example.loginapp.navigation.NavigationEvent
 import com.example.loginapp.navigation.Screen
 import com.example.loginapp.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val authRepository: AuthRepository = AuthRepository()
+    private val authRepository: AuthRepository = AuthRepository(),
+    private val userDao: UserDao? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -49,7 +53,7 @@ class LoginViewModel(
         _uiState.update { it.copy(errores = LoginErrores(emailError = emailErr, passwordError = passErr)) }
         return isValid
     }
-// Validaciones
+
     fun login() {
         if (!validarFormulario()) return
 
@@ -59,6 +63,17 @@ class LoginViewModel(
             val result = authRepository.login(_uiState.value.email, _uiState.value.password)
 
             result.onSuccess { user ->
+                // Guardar en Room sin el parámetro 'id'
+                launch(Dispatchers.IO) {
+                    userDao?.insertUser(
+                        UserEntity(
+                            email = user.email,
+                            role = user.role.name,
+                            isVerified = true
+                        )
+                    )
+                }
+
                 _uiState.update { it.copy(isLoading = false, currentUser = user) }
 
                 val route = when (user.role) {
@@ -71,7 +86,7 @@ class LoginViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errores = LoginErrores(authError = exception.message ?: "Error desconocido")
+                        errores = LoginErrores(authError = exception.message ?: "Error al iniciar sesión")
                     )
                 }
             }

@@ -4,12 +4,19 @@ import android.app.Activity
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+// Importaciones de Room (si están en com.example.loginapp.data.local o com.example.loginapp)
+import com.example.loginapp.data.local.AppDatabase
+import com.example.loginapp.data.local.UserEntity
 import com.example.loginapp.model.*
 import com.example.loginapp.navigation.NavigationEvent
 import com.example.loginapp.navigation.Screen
 import com.example.loginapp.repository.AuthRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.OAuthProvider
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class RegisterViewModel(
     private val authRepository: AuthRepository = AuthRepository()
@@ -21,14 +28,9 @@ class RegisterViewModel(
     private val _navigationEvent = MutableSharedFlow<NavigationEvent>()
     val navigationEvent: SharedFlow<NavigationEvent> = _navigationEvent.asSharedFlow()
 
-    // ⚠️ Sustituye esta cadena con tu Web Client ID copiado de Firebase Console
-    private val webClientId = "682645433329-bo08am7r6grjvimr3041hbck13llt8rt.apps.googleusercontent.com"
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    fun onNameChange(newName: String) {
-        _uiState.update {
-            it.copy(name = newName, errores = it.errores.copy(nameError = null, authError = null))
-        }
-    }
+    private val webClientId = "682645433329-bo08am7r6grjvimr3041hbck13llt8rt.apps.googleusercontent.com"
 
     fun onEmailChange(newEmail: String) {
         _uiState.update {
@@ -42,64 +44,158 @@ class RegisterViewModel(
         }
     }
 
+    fun onConfirmPasswordChange(newConfirmPassword: String) {
+        _uiState.update {
+            it.copy(confirmPassword = newConfirmPassword, errores = it.errores.copy(confirmPasswordError = null, authError = null))
+        }
+    }
+
     private fun validarFormulario(): Boolean {
         var isValid = true
-        var nameErr: String? = null
         var emailErr: String? = null
         var passErr: String? = null
+        var confirmPassErr: String? = null
 
-        if (_uiState.value.name.trim().isEmpty()) {
-            nameErr = "El nombre es obligatorio"
-            isValid = false
-        }
+        val state = _uiState.value
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(_uiState.value.email).matches()) {
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()) {
             emailErr = "Formato de correo inválido"
             isValid = false
         }
 
-        if (_uiState.value.password.length < 6) {
+        if (state.password.length < 6) {
             passErr = "La contraseña debe tener al menos 6 caracteres"
             isValid = false
         }
 
+        if (state.password != state.confirmPassword) {
+            confirmPassErr = "Las contraseñas no coinciden"
+            isValid = false
+        }
+
         _uiState.update {
-            it.copy(errores = RegisterErrores(nameError = nameErr, emailError = emailErr, passwordError = passErr))
+            it.copy(errores = RegisterErrores(emailError = emailErr, passwordError = passErr, confirmPasswordError = confirmPassErr))
         }
         return isValid
     }
 
-    fun registerWithEmail() {
+    fun registerWithEmail(context: Context) {
         if (!validarFormulario()) return
+
+        val email = _uiState.value.email.trim()
+        val password = _uiState.value.password
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errores = RegisterErrores()) }
 
-            val result = authRepository.registerWithEmail(
-                name = _uiState.value.name,
-                email = _uiState.value.email,
-                password = _uiState.value.password
-            )
+            auth.createUserWithEmailAndPassword(email, password)
+                .addOnSuccessListener { result ->
+                    val firebaseUser = result.user
 
-            handleAuthResult(result)
+                    // Enviar correo de verificación por Firebase
+                    firebaseUser?.sendEmailVerification()?.addOnCompleteListener {
+                        viewModelScope.launch(Dispatchers.IO) {
+                            // Guardar en la base de datos local de Room
+                            val db = AppDatabase.getDatabase(context)
+                            db.userDao().insertUser(
+                                UserEntity(
+                                    email = email,
+                                    passwordHash = password,
+                                    provider = "email",
+                                    isVerified = false
+                                )
+                            )
+
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    isSuccessMessageVisible = true,
+                                    successMessage = "Registro exitoso. Te hemos enviado un correo de verificación. Confírmalo antes de iniciar sesión."
+                                )
+                            }
+                        }
+                    }
+                }
+                .addOnFailureListener { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errores = RegisterErrores(authError = exception.message ?: "Error al registrar el usuario")
+                        )
+                    }
+                }
         }
     }
 
-    // ✅ Recibe el Context que viene de RegisterScreen
     fun registerWithGoogle(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errores = RegisterErrores()) }
             val result = authRepository.loginWithGoogle(context = context, webClientId = webClientId)
+
+            result.onSuccess { user ->
+                val email = user.email ?: "google_user@domain.com"
+
+                viewModelScope.launch(Dispatchers.IO) {
+                    val db = AppDatabase.getDatabase(context)
+                    val existingUser = db.userDao().getUserByEmail(email)
+
+                    if (existingUser == null) {
+                        val generatedPassword = "oauth_google_${UUID.randomUUID().toString().take(8)}"
+                        db.userDao().insertUser(
+                            UserEntity(
+                                email = email,
+                                passwordHash = generatedPassword,
+                                provider = "google",
+                                isVerified = true
+                            )
+                        )
+                    }
+                }
+            }
             handleAuthResult(result)
         }
     }
 
-    // ✅ Recibe el Activity que viene de RegisterScreen
-    fun registerWithGitHub(activity: Activity) {
+    fun registerWithApple(activity: Activity, context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errores = RegisterErrores()) }
-            val result = authRepository.loginWithGithub(activity = activity)
-            handleAuthResult(result)
+
+            val provider = OAuthProvider.newBuilder("apple.com")
+            provider.scopes = listOf("email", "name")
+
+            auth.startActivityForSignInWithProvider(activity, provider.build())
+                .addOnSuccessListener { authResult ->
+                    val email = authResult.user?.email
+                        ?: "apple_user_${UUID.randomUUID().toString().take(5)}@apple.com"
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        val db = AppDatabase.getDatabase(context)
+                        val existingUser = db.userDao().getUserByEmail(email)
+
+                        if (existingUser == null) {
+                            val generatedPassword = "oauth_apple_${UUID.randomUUID().toString().take(8)}"
+                            db.userDao().insertUser(
+                                UserEntity(
+                                    email = email,
+                                    passwordHash = generatedPassword,
+                                    provider = "apple",
+                                    isVerified = true
+                                )
+                            )
+                        }
+                    }
+
+                    _uiState.update { it.copy(isLoading = false) }
+                    navigateToLogin()
+                }
+                .addOnFailureListener { exception ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errores = RegisterErrores(authError = exception.message ?: "Error al autenticar con Apple")
+                        )
+                    }
+                }
         }
     }
 

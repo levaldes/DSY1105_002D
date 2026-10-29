@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -137,10 +137,11 @@ private fun RegisterForm(
     val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxWidth()) {
+        // Botón de Apple
         OutlinedButton(
             onClick = {
                 activity?.let { currentActivity ->
-                    viewModel.registerWithGitHub(currentActivity)
+                    viewModel.registerWithApple(currentActivity, context)
                 }
             },
             enabled = !uiState.isLoading,
@@ -149,11 +150,12 @@ private fun RegisterForm(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Continuar con GitHub", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            Text("Continuar con Apple", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Botón de Google
         OutlinedButton(
             onClick = {
                 viewModel.registerWithGoogle(context)
@@ -185,22 +187,7 @@ private fun RegisterForm(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = uiState.name,
-            onValueChange = viewModel::onNameChange,
-            label = { Text("Nombre completo") },
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.nameError != null,
-            supportingText = {
-                uiState.errores.nameError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
+        // Campo: Correo
         OutlinedTextField(
             value = uiState.email,
             onValueChange = viewModel::onEmailChange,
@@ -212,12 +199,13 @@ private fun RegisterForm(
             },
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        // Campo: Contraseña
         OutlinedTextField(
             value = uiState.password,
             onValueChange = viewModel::onPasswordChange,
@@ -230,10 +218,30 @@ private fun RegisterForm(
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth()
         )
 
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Campo: Repetir Contraseña
+        OutlinedTextField(
+            value = uiState.confirmPassword,
+            onValueChange = viewModel::onConfirmPasswordChange,
+            label = { Text("Repetir contraseña") },
+            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            isError = uiState.errores.confirmPasswordError != null,
+            supportingText = {
+                uiState.errores.confirmPasswordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            },
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Error general
         uiState.errores.authError?.let { errorMsg ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -244,10 +252,22 @@ private fun RegisterForm(
             )
         }
 
+        // Mensaje de verificación enviada
+        if (uiState.isSuccessMessageVisible) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = uiState.successMessage ?: "",
+                color = MaterialTheme.colorScheme.primary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Botón Registrarse
         Button(
-            onClick = { viewModel.registerWithEmail() },
+            onClick = { viewModel.registerWithEmail(context) },
             enabled = !uiState.isLoading,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
