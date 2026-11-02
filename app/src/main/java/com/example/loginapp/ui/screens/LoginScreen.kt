@@ -163,8 +163,10 @@ private fun LoginForm(viewModel: LoginViewModel) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // Botón único para Iniciar Sesión con Correo y Contraseña
         Button(
             onClick = { viewModel.login() },
+            enabled = !uiState.isLoading,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier
                 .fillMaxWidth()

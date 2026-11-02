@@ -1,9 +1,9 @@
 package com.example.loginapp.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.loginapp.data.local.UserDao
-import com.example.loginapp.data.local.UserEntity
 import com.example.loginapp.model.*
 import com.example.loginapp.navigation.NavigationEvent
 import com.example.loginapp.navigation.Screen
@@ -11,6 +11,7 @@ import com.example.loginapp.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class LoginViewModel(
     private val authRepository: AuthRepository = AuthRepository(),
@@ -22,6 +23,9 @@ class LoginViewModel(
 
     private val _navigationEvent = MutableSharedFlow<NavigationEvent>()
     val navigationEvent: SharedFlow<NavigationEvent> = _navigationEvent.asSharedFlow()
+
+    // Web Client ID de Google Cloud para autenticación Firebase
+    private val webClientId = "682645433329-bo08am7r6grjvimr3041hbck13llt8rt.apps.googleusercontent.com"
 
     fun onEmailChange(newEmail: String) {
         _uiState.update {
@@ -54,6 +58,7 @@ class LoginViewModel(
         return isValid
     }
 
+    // --- LOGIN CORREO / CONTRASEÑA ---
     fun login() {
         if (!validarFormulario()) return
 
@@ -63,25 +68,8 @@ class LoginViewModel(
             val result = authRepository.login(_uiState.value.email, _uiState.value.password)
 
             result.onSuccess { user ->
-                // Guardar en Room sin el parámetro 'id'
-                launch(Dispatchers.IO) {
-                    userDao?.insertUser(
-                        UserEntity(
-                            email = user.email,
-                            role = user.role.name,
-                            isVerified = true
-                        )
-                    )
-                }
-
                 _uiState.update { it.copy(isLoading = false, currentUser = user) }
-
-                val route = when (user.role) {
-                    UserRole.ADMIN -> Screen.HomeAdmin.route
-                    UserRole.SUPERVISOR -> Screen.HomeSupervisor.route
-                    UserRole.OPERADOR -> Screen.HomeOperator.route
-                }
-                _navigationEvent.emit(NavigationEvent.NavigateTo(route))
+                navegarSegunRol(user.role)
             }.onFailure { exception ->
                 _uiState.update {
                     it.copy(
@@ -91,6 +79,67 @@ class LoginViewModel(
                 }
             }
         }
+    }
+
+    // --- LOGIN CON GOOGLE + VERIFICACIÓN DE CONTRASEÑA LOCAL ---
+    fun loginWithGoogle(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errores = LoginErrores()) }
+            val result = authRepository.loginWithGoogle(context = context, webClientId = webClientId)
+
+            result.onSuccess { user ->
+                _uiState.update { it.copy(isLoading = false, currentUser = user) }
+
+                val cleanEmail = user.email.lowercase().trim()
+
+                val localUser = withContext(Dispatchers.IO) {
+                    userDao?.getUserByEmail(cleanEmail)
+                }
+
+                if (localUser == null || localUser.passwordHash.isEmpty()) {
+                    _navigationEvent.emit(NavigationEvent.NavigateTo(Screen.CreatePassword.route))
+                } else {
+                    navegarSegunRol(user.role)
+                }
+            }.onFailure { exception ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errores = LoginErrores(authError = exception.message ?: "Error con Google")
+                    )
+                }
+            }
+        }
+    }
+
+    // --- LOGIN CON APPLE ---
+    fun loginWithApple(activity: android.app.Activity) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errores = LoginErrores()) }
+            val result = authRepository.loginWithApple(activity)
+
+            result.onSuccess { user ->
+                _uiState.update { it.copy(isLoading = false, currentUser = user) }
+                navegarSegunRol(user.role)
+            }.onFailure { exception ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errores = LoginErrores(authError = exception.message ?: "Error con Apple")
+                    )
+                }
+            }
+        }
+    }
+
+    // --- NAVEGACIÓN Y AUXILIARES ---
+    private suspend fun navegarSegunRol(role: UserRole) {
+        val route = when (role) {
+            UserRole.ADMIN -> Screen.HomeAdmin.route
+            UserRole.SUPERVISOR -> Screen.HomeSupervisor.route
+            UserRole.OPERADOR -> Screen.HomeOperator.route
+        }
+        _navigationEvent.emit(NavigationEvent.NavigateTo(route))
     }
 
     fun onNavigateToRegister() {

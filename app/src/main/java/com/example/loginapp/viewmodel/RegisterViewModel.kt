@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-// Importaciones de Room (si están en com.example.loginapp.data.local o com.example.loginapp)
 import com.example.loginapp.data.local.AppDatabase
 import com.example.loginapp.data.local.UserEntity
 import com.example.loginapp.model.*
@@ -127,6 +126,7 @@ class RegisterViewModel(
         }
     }
 
+    // --- REGISTRO CON GOOGLE ---
     fun registerWithGoogle(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errores = RegisterErrores()) }
@@ -139,12 +139,12 @@ class RegisterViewModel(
                     val db = AppDatabase.getDatabase(context)
                     val existingUser = db.userDao().getUserByEmail(email)
 
+                    // Se inserta con passwordHash vacío si no existe previamente
                     if (existingUser == null) {
-                        val generatedPassword = "oauth_google_${UUID.randomUUID().toString().take(8)}"
                         db.userDao().insertUser(
                             UserEntity(
                                 email = email,
-                                passwordHash = generatedPassword,
+                                passwordHash = "",
                                 provider = "google",
                                 isVerified = true
                             )
@@ -173,11 +173,10 @@ class RegisterViewModel(
                         val existingUser = db.userDao().getUserByEmail(email)
 
                         if (existingUser == null) {
-                            val generatedPassword = "oauth_apple_${UUID.randomUUID().toString().take(8)}"
                             db.userDao().insertUser(
                                 UserEntity(
                                     email = email,
-                                    passwordHash = generatedPassword,
+                                    passwordHash = "",
                                     provider = "apple",
                                     isVerified = true
                                 )
@@ -203,12 +202,8 @@ class RegisterViewModel(
         result.onSuccess { user ->
             _uiState.update { it.copy(isLoading = false, currentUser = user) }
 
-            val route = when (user.role) {
-                UserRole.ADMIN -> Screen.HomeAdmin.route
-                UserRole.SUPERVISOR -> Screen.HomeSupervisor.route
-                UserRole.OPERADOR -> Screen.HomeOperator.route
-            }
-            _navigationEvent.emit(NavigationEvent.NavigateTo(route))
+            // Dirigir al usuario a la creación de contraseña
+            _navigationEvent.emit(NavigationEvent.NavigateTo(Screen.CreatePassword.route))
         }.onFailure { exception ->
             _uiState.update {
                 it.copy(
