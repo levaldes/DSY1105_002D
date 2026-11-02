@@ -16,3 +16,7 @@ local.properties
 app/google-services.json
 # Archivos temporales de Kotlin
 .kotlin/
+# Archivos de log
+*.log
+# Archivos de configuración local de IDE
+.idea/
