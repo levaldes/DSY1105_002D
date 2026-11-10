@@ -1,6 +1,5 @@
 package com.example.loginapp.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
@@ -12,32 +11,60 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = ColorTokens.DarkPrimary,
+    onPrimary = ColorTokens.DarkOnPrimary,
+    primaryContainer = ColorTokens.DarkPrimaryContainer,
+    onPrimaryContainer = ColorTokens.DarkOnPrimaryContainer,
+    secondary = GuardianCyan,
+    onSecondary = GuardianNavy,
+    secondaryContainer = GuardianDarkSurfaceVariant,
+    onSecondaryContainer = GuardianDarkText,
+    tertiary = GuardianAmber,
+    onTertiary = GuardianNavy,
+    background = GuardianDarkBackground,
+    onBackground = GuardianDarkText,
+    surface = GuardianDarkSurface,
+    onSurface = GuardianDarkText,
+    surfaceVariant = GuardianDarkSurfaceVariant,
+    onSurfaceVariant = GuardianDarkMuted,
+    outline = GuardianDarkOutline,
+    outlineVariant = GuardianDarkOutline,
+    error = ColorTokens.DarkError,
+    onError = GuardianNavy,
+    errorContainer = ColorTokens.DarkErrorContainer,
+    onErrorContainer = ColorTokens.DarkOnErrorContainer
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = GuardianIndigo,
+    onPrimary = GuardianSurface,
+    primaryContainer = ColorTokens.LightPrimaryContainer,
+    onPrimaryContainer = ColorTokens.LightOnPrimaryContainer,
+    secondary = GuardianTeal,
+    onSecondary = GuardianSurface,
+    secondaryContainer = ColorTokens.LightSecondaryContainer,
+    onSecondaryContainer = ColorTokens.LightOnSecondaryContainer,
+    tertiary = GuardianAmber,
+    onTertiary = GuardianSurface,
+    background = GuardianBackground,
+    onBackground = GuardianText,
+    surface = GuardianSurface,
+    onSurface = GuardianText,
+    surfaceVariant = GuardianSurfaceVariant,
+    onSurfaceVariant = GuardianMuted,
+    outline = GuardianOutline,
+    outlineVariant = GuardianOutline,
+    error = GuardianRed,
+    onError = GuardianSurface,
+    errorContainer = ColorTokens.LightErrorContainer,
+    onErrorContainer = ColorTokens.LightOnErrorContainer
 )
 
 @Composable
 fun LoginAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    // Desactivado por defecto para conservar la identidad visual de Modo Guardián.
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -55,4 +82,21 @@ fun LoginAppTheme(
         typography = Typography,
         content = content
     )
+}
+
+private object ColorTokens {
+    val LightPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFE0E7FF)
+    val LightOnPrimaryContainer = androidx.compose.ui.graphics.Color(0xFF1E1B4B)
+    val LightSecondaryContainer = androidx.compose.ui.graphics.Color(0xFFCCFBF1)
+    val LightOnSecondaryContainer = androidx.compose.ui.graphics.Color(0xFF134E4A)
+    val LightErrorContainer = androidx.compose.ui.graphics.Color(0xFFFEE2E2)
+    val LightOnErrorContainer = androidx.compose.ui.graphics.Color(0xFF7F1D1D)
+
+    val DarkPrimary = androidx.compose.ui.graphics.Color(0xFFA5B4FC)
+    val DarkOnPrimary = androidx.compose.ui.graphics.Color(0xFF1E1B4B)
+    val DarkPrimaryContainer = androidx.compose.ui.graphics.Color(0xFF312E81)
+    val DarkOnPrimaryContainer = androidx.compose.ui.graphics.Color(0xFFE0E7FF)
+    val DarkError = androidx.compose.ui.graphics.Color(0xFFF87171)
+    val DarkErrorContainer = androidx.compose.ui.graphics.Color(0xFF7F1D1D)
+    val DarkOnErrorContainer = androidx.compose.ui.graphics.Color(0xFFFEE2E2)
 }

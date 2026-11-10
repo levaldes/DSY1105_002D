@@ -1,23 +1,36 @@
 package com.example.loginapp.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import android.app.Activity
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.loginapp.ui.components.AuthDivider
+import com.example.loginapp.ui.components.AuthErrorBanner
+import com.example.loginapp.ui.components.AuthFeature
+import com.example.loginapp.ui.components.AuthShell
+import com.example.loginapp.ui.components.EmailTextField
+import com.example.loginapp.ui.components.GradientButton
+import com.example.loginapp.ui.components.PasswordTextField
+import com.example.loginapp.ui.components.SocialAuthButtons
 import com.example.loginapp.ui.utils.WindowSizeClass
 import com.example.loginapp.viewmodel.LoginViewModel
 
@@ -26,170 +39,89 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     windowSizeClass: WindowSizeClass
 ) {
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            if (windowSizeClass == WindowSizeClass.COMPACT) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        HeaderSection()
-                        Spacer(modifier = Modifier.height(24.dp))
-                        LoginForm(viewModel = viewModel)
-                    }
-                }
-            } else {
-                Card(
-                    modifier = Modifier
-                        .width(680.dp)
-                        .padding(24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(32.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            HeaderSection()
-                        }
-                        Spacer(modifier = Modifier.width(24.dp))
-                        Column(modifier = Modifier.weight(1.2f)) {
-                            LoginForm(viewModel = viewModel)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HeaderSection() {
-    Box(
-        modifier = Modifier
-            .size(80.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Shield,
-            contentDescription = "Logo Modo Guardián",
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = "Modo Guardián",
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = "Sistema InsertCode",
-        fontSize = 14.sp,
-        color = MaterialTheme.colorScheme.outline
-    )
-}
-
-@Composable
-private fun LoginForm(viewModel: LoginViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val activity = context as? Activity
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        OutlinedTextField(
+    AuthShell(
+        windowSizeClass = windowSizeClass,
+        eyebrow = "BIENVENIDO DE NUEVO",
+        heroTitle = "Protege lo que más importa.",
+        heroSubtitle = "Gestiona el acceso, supervisa a tu equipo y mantén tu operación segura desde un solo lugar.",
+        formTitle = "Iniciar sesión",
+        formSubtitle = "Ingresa tus credenciales para continuar.",
+        features = listOf(
+            AuthFeature(
+                icon = Icons.Default.Shield,
+                title = "Acceso seguro",
+                description = "Autenticación con Firebase y roles definidos."
+            ),
+            AuthFeature(
+                icon = Icons.Default.NotificationsActive,
+                title = "Alertas en tiempo real",
+                description = "Recibe avisos críticos al instante."
+            ),
+            AuthFeature(
+                icon = Icons.Default.Groups,
+                title = "Equipo conectado",
+                description = "Administra usuarios y permisos fácilmente."
+            )
+        )
+    ) {
+        EmailTextField(
             value = uiState.email,
             onValueChange = viewModel::onEmailChange,
-            label = { Text("Correo electrónico") },
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.emailError != null,
-            supportingText = {
-                uiState.errores.emailError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            modifier = Modifier.fillMaxWidth()
+            error = uiState.errores.emailError
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(10.dp))
+        PasswordTextField(
             value = uiState.password,
             onValueChange = viewModel::onPasswordChange,
-            label = { Text("Contraseña") },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.passwordError != null,
-            supportingText = {
-                uiState.errores.passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth()
+            label = "Contraseña",
+            error = uiState.errores.passwordError,
+            imeAction = ImeAction.Done
         )
 
-        uiState.errores.authError?.let { errorMsg ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
+        uiState.errores.authError?.let { message ->
+            Spacer(modifier = Modifier.height(12.dp))
+            AuthErrorBanner(message)
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+        GradientButton(
+            text = "Iniciar sesión",
+            onClick = viewModel::login,
+            enabled = uiState.isLoginEnabled,
+            loading = uiState.isLoading
+        )
 
-        // Botón único para Iniciar Sesión con Correo y Contraseña
-        Button(
-            onClick = { viewModel.login() },
+        Spacer(modifier = Modifier.height(20.dp))
+        AuthDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+        SocialAuthButtons(
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp)
+            onGoogleClick = { viewModel.loginWithGoogle(context) },
+            onAppleClick = { activity?.let { viewModel.loginWithApple(it) } }
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.5.dp
+            Text(
+                text = "¿No tienes cuenta?",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp
+            )
+            TextButton(onClick = viewModel::onNavigateToRegister) {
+                Text(
+                    text = "Regístrate aquí",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
-            } else {
-                Text("Iniciar Sesión", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        TextButton(
-            onClick = { viewModel.onNavigateToRegister() },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("¿No tienes cuenta? Regístrate aquí", fontSize = 13.sp)
         }
     }
 }

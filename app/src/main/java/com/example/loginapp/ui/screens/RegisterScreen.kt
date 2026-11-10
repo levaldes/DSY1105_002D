@@ -1,27 +1,38 @@
 package com.example.loginapp.ui.screens
 
 import android.app.Activity
-import android.content.Context
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.loginapp.ui.components.AuthDivider
+import com.example.loginapp.ui.components.AuthErrorBanner
+import com.example.loginapp.ui.components.AuthFeature
+import com.example.loginapp.ui.components.AuthShell
+import com.example.loginapp.ui.components.AuthSuccessBanner
+import com.example.loginapp.ui.components.EmailTextField
+import com.example.loginapp.ui.components.GradientButton
+import com.example.loginapp.ui.components.PasswordStrength
+import com.example.loginapp.ui.components.PasswordTextField
+import com.example.loginapp.ui.components.SocialAuthButtons
 import com.example.loginapp.ui.utils.WindowSizeClass
 import com.example.loginapp.viewmodel.RegisterViewModel
 
@@ -30,268 +41,112 @@ fun RegisterScreen(
     viewModel: RegisterViewModel,
     windowSizeClass: WindowSizeClass
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val activity = context as? Activity
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            if (windowSizeClass == WindowSizeClass.COMPACT) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        RegisterHeaderSection()
-                        Spacer(modifier = Modifier.height(20.dp))
-                        RegisterForm(
-                            viewModel = viewModel,
-                            context = context,
-                            activity = activity
-                        )
-                    }
-                }
-            } else {
-                Card(
-                    modifier = Modifier
-                        .width(720.dp)
-                        .padding(24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(32.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            RegisterHeaderSection()
-                        }
-                        Spacer(modifier = Modifier.width(24.dp))
-                        Column(modifier = Modifier.weight(1.3f)) {
-                            RegisterForm(
-                                viewModel = viewModel,
-                                context = context,
-                                activity = activity
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RegisterHeaderSection() {
-    Box(
-        modifier = Modifier
-            .size(80.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Default.Shield,
-            contentDescription = "Logo Modo Guardián",
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-    Text(
-        text = "Crear Cuenta",
-        fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurface
-    )
-    Text(
-        text = "Únete a Modo Guardián",
-        fontSize = 14.sp,
-        color = MaterialTheme.colorScheme.outline
-    )
-}
-
-@Composable
-private fun RegisterForm(
-    viewModel: RegisterViewModel,
-    context: Context,
-    activity: Activity?
-) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Botón de Apple
-        OutlinedButton(
-            onClick = {
-                activity?.let { currentActivity ->
-                    viewModel.registerWithApple(currentActivity, context)
-                }
-            },
-            enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text("Continuar con Apple", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Botón de Google
-        OutlinedButton(
-            onClick = {
-                viewModel.registerWithGoogle(context)
-            },
-            enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-        ) {
-            Text("Continuar con Google", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-            Text(
-                text = " o ",
-                color = MaterialTheme.colorScheme.outline,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 8.dp)
+    AuthShell(
+        windowSizeClass = windowSizeClass,
+        eyebrow = "NUEVO USUARIO",
+        heroTitle = "Únete a Modo Guardián.",
+        heroSubtitle = "Crea tu cuenta y empieza a proteger tu entorno con una experiencia simple y segura.",
+        formTitle = "Crear cuenta",
+        formSubtitle = "Completa tus datos para comenzar.",
+        features = listOf(
+            AuthFeature(
+                icon = Icons.Default.PersonAdd,
+                title = "Registro rápido",
+                description = "Crea tu cuenta en menos de un minuto."
+            ),
+            AuthFeature(
+                icon = Icons.Default.VerifiedUser,
+                title = "Cuenta verificada",
+                description = "Protegemos tu identidad con verificación por correo."
+            ),
+            AuthFeature(
+                icon = Icons.Default.Devices,
+                title = "Acceso multiplataforma",
+                description = "Disponible en todos tus dispositivos."
             )
-            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
-        }
+        )
+    ) {
+        SocialAuthButtons(
+            enabled = !uiState.isLoading,
+            onGoogleClick = { viewModel.registerWithGoogle(context) },
+            onAppleClick = {
+                activity?.let { viewModel.registerWithApple(it, context) }
+            }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
+        AuthDivider()
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Campo: Correo
-        OutlinedTextField(
+        EmailTextField(
             value = uiState.email,
             onValueChange = viewModel::onEmailChange,
-            label = { Text("Correo electrónico") },
-            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.emailError != null,
-            supportingText = {
-                uiState.errores.emailError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth()
+            error = uiState.errores.emailError
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Campo: Contraseña
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(10.dp))
+        PasswordTextField(
             value = uiState.password,
             onValueChange = viewModel::onPasswordChange,
-            label = { Text("Contraseña") },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.passwordError != null,
-            supportingText = {
-                uiState.errores.passwordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
-            modifier = Modifier.fillMaxWidth()
+            label = "Contraseña",
+            error = uiState.errores.passwordError
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        if (uiState.password.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            PasswordStrength(password = uiState.password)
+        }
 
-        // Campo: Repetir Contraseña
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(10.dp))
+        PasswordTextField(
             value = uiState.confirmPassword,
             onValueChange = viewModel::onConfirmPasswordChange,
-            label = { Text("Repetir contraseña") },
-            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            isError = uiState.errores.confirmPasswordError != null,
-            supportingText = {
-                uiState.errores.confirmPasswordError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(12.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            modifier = Modifier.fillMaxWidth()
+            label = "Repetir contraseña",
+            error = uiState.errores.confirmPasswordError,
+            imeAction = ImeAction.Done
         )
 
-        // Error general
-        uiState.errores.authError?.let { errorMsg ->
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = errorMsg,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
-            )
+        uiState.errores.authError?.let { message ->
+            Spacer(modifier = Modifier.height(12.dp))
+            AuthErrorBanner(message)
         }
 
-        // Mensaje de verificación enviada
         if (uiState.isSuccessMessageVisible) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = uiState.successMessage ?: "",
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+            Spacer(modifier = Modifier.height(12.dp))
+            AuthSuccessBanner(
+                message = uiState.successMessage ?: "Registro exitoso. Revisa tu correo."
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Botón Registrarse
-        Button(
+        Spacer(modifier = Modifier.height(20.dp))
+        GradientButton(
+            text = "Crear cuenta",
             onClick = { viewModel.registerWithEmail(context) },
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
+            loading = uiState.isLoading
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.5.dp
+            Text(
+                text = "¿Ya tienes cuenta?",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 13.sp
+            )
+            TextButton(onClick = viewModel::navigateToLogin) {
+                Text(
+                    text = "Inicia sesión",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
                 )
-            } else {
-                Text("Registrarse", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        TextButton(
-            onClick = { viewModel.navigateToLogin() },
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text("¿Ya tienes cuenta? Inicia sesión", fontSize = 13.sp)
         }
     }
 }

@@ -23,6 +23,7 @@ import com.example.loginapp.navigation.NavigationEvent
 import com.example.loginapp.navigation.Screen
 import com.example.loginapp.repository.AuthRepository
 import com.example.loginapp.ui.screens.*
+import com.example.loginapp.ui.theme.LoginAppTheme
 import com.example.loginapp.ui.utils.rememberWindowSizeClass
 import com.example.loginapp.viewmodel.CreatePasswordViewModel
 import com.example.loginapp.viewmodel.LoginViewModel
@@ -38,7 +39,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            LoginAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
