@@ -89,9 +89,11 @@ import com.example.loginapp.ui.components.GuardianLogo
 import com.example.loginapp.ui.utils.WindowSizeClass
 import com.example.loginapp.ui.utils.rememberWindowSizeClass
 import com.example.loginapp.viewmodel.LoginViewModel
+import androidx.compose.material.icons.filled.Videocam
 
 private enum class DashboardTab(val label: String, val icon: ImageVector) {
     INICIO("Inicio", Icons.Default.Home),
+    CAMARAS("Cámaras", Icons.Default.Videocam),
     ALERTAS("Alertas", Icons.Default.Notifications),
     PERFIL("Perfil", Icons.Default.Person)
 }
@@ -325,6 +327,11 @@ private fun DashboardContent(
             config = config,
             displayName = displayName,
             email = email
+        )
+
+        DashboardTab.CAMARAS -> CamarasTab(
+            modifier = modifier,
+            accent = config.accent
         )
 
         DashboardTab.ALERTAS -> AlertasTab(
