@@ -8,5 +8,6 @@ local.properties
 build/
 app/build/
 *.keystore
+!app/debug.keystore
 *.jks
 app/google-services.json
